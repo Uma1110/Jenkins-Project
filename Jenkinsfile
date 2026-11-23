@@ -1,31 +1,49 @@
-
 pipeline {
     agent any
+
+    options {
+        skipDefaultCheckout(true)
+    }
 
     stages {
 
         stage('Checkout') {
             steps {
-                echo 'GitHub repository connected!'
+                checkout scm
+                echo 'Code downloaded from GitHub'
             }
         }
 
         stage('Build') {
             steps {
-                echo 'Application is building...'
+                sh 'mvn -B clean compile'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'All tests passed!'
+                sh 'mvn -B test'
             }
         }
 
-        stage('Deploy') {
+        stage('Package') {
             steps {
-                echo 'Application deployed successfully!'
+                sh 'mvn -B package -DskipTests'
             }
+        }
+    }
+
+    post {
+        always {
+            junit allowEmptyResults: true,
+                  testResults: 'target/surefire-reports/*.xml'
+
+            archiveArtifacts artifacts: 'target/*.jar',
+                             allowEmptyArchive: true
+        }
+
+        success {
+            echo 'Java CI pipeline completed successfully!'
         }
     }
 }
